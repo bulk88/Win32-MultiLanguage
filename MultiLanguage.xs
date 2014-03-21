@@ -16,11 +16,12 @@
 #include <windows.h>
 #include <mlang.h>
 
+#define PERL_NO_GET_CONTEXT
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
 
-SV* wchar2sv(LPCWSTR lpS, UINT nLen)
+SV* wchar2sv(pTHX_ LPCWSTR lpS, UINT nLen)
 {
     SV* result;
     unsigned int i = 0;
@@ -48,7 +49,7 @@ SV* wchar2sv(LPCWSTR lpS, UINT nLen)
     SvUTF8_on(result);
     return result;}
 
-LPWSTR sv2wchar(SV* sv, UINT* len)
+LPWSTR sv2wchar(pTHX_ SV* sv, UINT* len)
 {
     LPWSTR lpNew;
     STRLEN svlen;
@@ -113,43 +114,43 @@ LPWSTR sv2wchar(SV* sv, UINT* len)
 }
 
 HV*
-MimeCpInfo2Sv(PMIMECPINFO pcpi) {
+MimeCpInfo2Sv(pTHX_ PMIMECPINFO pcpi) {
     HV* hv = newHV();
     
     hv_store(hv, "Flags",             5, newSVuv(pcpi->dwFlags), 0);
     hv_store(hv, "CodePage",          8, newSVuv(pcpi->uiCodePage), 0);
     hv_store(hv, "FamilyCodePage",   14, newSVuv(pcpi->uiFamilyCodePage), 0);
-    hv_store(hv, "Description",      11, wchar2sv(pcpi->wszDescription, 0), 0);
-    hv_store(hv, "WebCharset",       10, wchar2sv(pcpi->wszWebCharset, 0), 0);
-    hv_store(hv, "HeaderCharset",    13, wchar2sv(pcpi->wszHeaderCharset, 0), 0);
-    hv_store(hv, "BodyCharset",      11, wchar2sv(pcpi->wszBodyCharset, 0), 0);
-    hv_store(hv, "FixedWidthFont",   14, wchar2sv(pcpi->wszFixedWidthFont, 0), 0);
-    hv_store(hv, "ProportionalFont", 16, wchar2sv(pcpi->wszProportionalFont, 0), 0);
+    hv_store(hv, "Description",      11, wchar2sv(aTHX_ pcpi->wszDescription, 0), 0);
+    hv_store(hv, "WebCharset",       10, wchar2sv(aTHX_ pcpi->wszWebCharset, 0), 0);
+    hv_store(hv, "HeaderCharset",    13, wchar2sv(aTHX_ pcpi->wszHeaderCharset, 0), 0);
+    hv_store(hv, "BodyCharset",      11, wchar2sv(aTHX_ pcpi->wszBodyCharset, 0), 0);
+    hv_store(hv, "FixedWidthFont",   14, wchar2sv(aTHX_ pcpi->wszFixedWidthFont, 0), 0);
+    hv_store(hv, "ProportionalFont", 16, wchar2sv(aTHX_ pcpi->wszProportionalFont, 0), 0);
     hv_store(hv, "GDICharset",       10, newSViv(pcpi->bGDICharset), 0);
 
     return hv;
 }
 
 HV*
-ScriptInfo2Sv(PSCRIPTINFO psi) {
+ScriptInfo2Sv(pTHX_ PSCRIPTINFO psi) {
     HV* hv = newHV();
     
     hv_store(hv, "ScriptId",          8, newSVuv(psi->ScriptId), 0);
     hv_store(hv, "CodePage",          8, newSVuv(psi->uiCodePage), 0);
-    hv_store(hv, "Description",      11, wchar2sv(psi->wszDescription, 0), 0);
-    hv_store(hv, "FixedWidthFont",   14, wchar2sv(psi->wszFixedWidthFont, 0), 0);
-    hv_store(hv, "ProportionalFont", 16, wchar2sv(psi->wszProportionalFont, 0), 0);
+    hv_store(hv, "Description",      11, wchar2sv(aTHX_ psi->wszDescription, 0), 0);
+    hv_store(hv, "FixedWidthFont",   14, wchar2sv(aTHX_ psi->wszFixedWidthFont, 0), 0);
+    hv_store(hv, "ProportionalFont", 16, wchar2sv(aTHX_ psi->wszProportionalFont, 0), 0);
 
     return hv;
 }
 
 HV*
-Rfc1766Info2Sv(PRFC1766INFO pRfc1766Info) {
+Rfc1766Info2Sv(pTHX_ PRFC1766INFO pRfc1766Info) {
     HV* hv = newHV();
     
     hv_store(hv, "Lcid",        4, newSVuv(pRfc1766Info->lcid), 0);
-    hv_store(hv, "Rfc1766",     7, wchar2sv(pRfc1766Info->wszRfc1766, 0), 0);
-    hv_store(hv, "LocaleName", 10, wchar2sv(pRfc1766Info->wszLocaleName, 0), 0);
+    hv_store(hv, "Rfc1766",     7, wchar2sv(aTHX_ pRfc1766Info->wszRfc1766, 0), 0);
+    hv_store(hv, "LocaleName", 10, wchar2sv(aTHX_ pRfc1766Info->wszLocaleName, 0), 0);
 
     return hv;
 }
@@ -267,7 +268,7 @@ GetRfc1766FromLcid(Lcid = GetUserDefaultLCID())
         XSRETURN_EMPTY;
     }
     
-    result = wchar2sv(bstrRfc1766, 0);
+    result = wchar2sv(aTHX_ bstrRfc1766, 0);
     
     /*
       it is not documented that the caller is responsible for freeing the bstr
@@ -304,7 +305,7 @@ GetCodePageInfo(CodePage, LangId)
         XSRETURN_EMPTY;
     }
 
-    hv = MimeCpInfo2Sv(&cpi);
+    hv = MimeCpInfo2Sv(aTHX_ &cpi);
     
     XPUSHs(sv_2mortal(newRV_noinc((SV*)hv)));
 
@@ -335,7 +336,7 @@ GetCodePageDescription(CodePage, Lcid = GetUserDefaultLCID())
         XSRETURN_EMPTY;
     }
 
-    XPUSHs(sv_2mortal(wchar2sv(lpWideCharStr, 0)));
+    XPUSHs(sv_2mortal(wchar2sv(aTHX_ lpWideCharStr, 0)));
   
 void
 GetCharsetInfo(svCharset)
@@ -351,7 +352,7 @@ GetCharsetInfo(svCharset)
     
   PPCODE:
 
-    bstrCharset = (BSTR)sv2wchar(svCharset, &len);
+    bstrCharset = (BSTR)sv2wchar(aTHX_ svCharset, &len);
     
     if (!bstrCharset)
     {
@@ -378,7 +379,7 @@ GetCharsetInfo(svCharset)
     hv = newHV();
     hv_store(hv, "CodePage",          8, newSVuv(csi.uiCodePage), 0);
     hv_store(hv, "InternetEncoding", 16, newSVuv(csi.uiInternetEncoding), 0);
-    hv_store(hv, "Charset",           7, wchar2sv(csi.wszCharset, 0), 0);
+    hv_store(hv, "Charset",           7, wchar2sv(aTHX_ csi.wszCharset, 0), 0);
 
     XPUSHs(sv_2mortal(newRV_noinc((SV*)hv)));
 
@@ -409,7 +410,7 @@ DetectOutboundCodePage(sv, ...)
         warn("Third parameter not yet implemented\n");
     }
     
-    lpWideCharStr = sv2wchar(sv, &cchWideChar);
+    lpWideCharStr = sv2wchar(aTHX_ sv, &cchWideChar);
     
     if (!lpWideCharStr)
     {
@@ -500,7 +501,7 @@ GetRfc1766Info(Lcid = GetUserDefaultLCID(), LangId = GetUserDefaultLangID())
         XSRETURN_EMPTY;
     }
     
-    hv = Rfc1766Info2Sv(&Rfc1766Info);
+    hv = Rfc1766Info2Sv(aTHX_ &Rfc1766Info);
     
     XPUSHs(sv_2mortal(newRV_noinc((SV*)hv)));
 
@@ -517,7 +518,7 @@ GetLcidFromRfc1766(svRfc1766)
   
   PPCODE:
   
-    bstrRfc1766 = sv2wchar(svRfc1766, &len);
+    bstrRfc1766 = sv2wchar(aTHX_ svRfc1766, &len);
     
     if (CreateMlang(&p, &IID_IMultiLanguage2)) {
         warn("CoCreateInstance failed\n");
@@ -619,7 +620,7 @@ EnumCodePages(Flags = 0, LangId = GetUserDefaultLangID())
     }
 
     while (S_OK == IEnumCodePage_Next(pEnumCp, 1, &cpi, &pceltFetched)) {
-      HV* svInfo = MimeCpInfo2Sv(&cpi);
+      HV* svInfo = MimeCpInfo2Sv(aTHX_ &cpi);
       XPUSHs(sv_2mortal(newRV_noinc((SV*)svInfo)));
     }
 
@@ -653,7 +654,7 @@ EnumScripts(Flags = 0, LangId = GetUserDefaultLangID())
     }
 
     while (S_OK == IEnumScript_Next(pEnumScript, 1, &si, &pceltFetched)) {
-      HV* svInfo = ScriptInfo2Sv(&si);
+      HV* svInfo = ScriptInfo2Sv(aTHX_ &si);
       XPUSHs(sv_2mortal(newRV_noinc((SV*)svInfo)));
     }
 
@@ -686,7 +687,7 @@ EnumRfc1766(LangId = GetUserDefaultLangID())
     }
 
     while (S_OK == IEnumRfc1766_Next(pEnumRfc1766, 1, &ri, &pceltFetched)) {
-      HV* svInfo = Rfc1766Info2Sv(&ri);
+      HV* svInfo = Rfc1766Info2Sv(aTHX_ &ri);
       XPUSHs(sv_2mortal(newRV_noinc((SV*)svInfo)));
     }
 
